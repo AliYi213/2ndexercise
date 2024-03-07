@@ -11,34 +11,30 @@ public class AESencryption {
         Cipher cipher = Cipher.getInstance(ALGORITHM + "/" + mode + "/PKCS5Padding");
         SecretKeySpec keySpec = new SecretKeySpec(secretKey.getBytes(), ALGORITHM);
 
-        if (mode.equals("CBC") || mode.equals("CFB")) {
-            byte[] iv = generateIV();
-            cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
-        } else {
-            cipher.init(Cipher.ENCRYPT_MODE, keySpec);
-        }
+        byte[] iv = generateIV();
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
 
         byte[] encryptedBytes = cipher.doFinal(plaintext.getBytes());
-        return Base64.getEncoder().encodeToString(encryptedBytes);
+        String encryptedText = Base64.getEncoder().encodeToString(encryptedBytes);
+
+        return Base64.getEncoder().encodeToString(iv) + ":" + encryptedText;
     }
 
     public static String decrypt(String ciphertext, String secretKey, String mode) throws Exception {
         Cipher cipher = Cipher.getInstance(ALGORITHM + "/" + mode + "/PKCS5Padding");
         SecretKeySpec keySpec = new SecretKeySpec(secretKey.getBytes(), ALGORITHM);
 
-        if (mode.equals("CBC") || mode.equals("CFB")) {
-            byte[] iv = generateIV();
-            cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
-        } else {
-            cipher.init(Cipher.DECRYPT_MODE, keySpec);
-        }
+        String[] parts = ciphertext.split(":");
+        byte[] iv = Base64.getDecoder().decode(parts[0]);
+        byte[] encryptedBytes = Base64.getDecoder().decode(parts[1]);
 
-        byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(ciphertext));
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
+
+        byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
         return new String(decryptedBytes);
     }
 
     private static byte[] generateIV() {
-
         byte[] iv = new byte[16];
         new java.security.SecureRandom().nextBytes(iv);
         return iv;
